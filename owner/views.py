@@ -18,6 +18,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Deadstock_Item
 from .serializers import DeadstockItemSerializer
+from rest_framework import serializers
 
 
 # class ItemAPIView(APIView):
@@ -237,3 +238,32 @@ class BookDeadstockItem(APIView):
         serializer.save()
 
         return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+
+class BuyItemView(APIView):
+    def post(self, request, item_id):
+        serializer = BuyItemSerializer(data=request.data)
+        if serializer.is_valid():
+            quantity = serializer.validated_data['quantity']
+            try:
+                item = Item.objects.get(pk=item_id)
+            except Item.DoesNotExist:
+                return Response({"error": "Item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            if item.available and item.stock >= quantity:
+                # Assuming you have a user authentication system in place, you can get the user who is buying the item
+                user = request.user  # Assuming user is authenticated
+
+                # Perform the purchase logic here, for example, deducting the stock, updating user's purchase history, etc.
+                # You should implement this according to your application's logic
+
+                # For example, deducting the stock:
+                item.stock -= quantity
+                item.save()
+
+                return Response({"message": "Purchase successful"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Item not available or insufficient stock"},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
